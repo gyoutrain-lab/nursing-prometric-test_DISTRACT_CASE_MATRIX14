@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCFHS Nurse Technician Master Matrix (Level 2)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    .glass-card {
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(168, 85, 247, 0.4);
+      border-radius: 3px;
+    }
+    .slot-active {
+      border-color: #c084fc !important;
+      background: rgba(192, 132, 252, 0.18) !important;
+      box-shadow: 0 0 16px rgba(192, 132, 252, 0.4);
+    }
+    .slot-filled {
+      border-color: #2dd4bf !important;
+      background: rgba(45, 212, 191, 0.12) !important;
+    }
+    /* Heavy Screen Shake on Incorrect Answer */
+    @keyframes bam-shake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-18px, -12px) rotate(-2deg); }
+      20% { transform: translate(18px, 12px) rotate(2deg); }
+      30% { transform: translate(-14px, 10px) rotate(-1.5deg); }
+      40% { transform: translate(14px, -10px) rotate(1.5deg); }
+      50% { transform: translate(-10px, -6px) rotate(-1deg); }
+      60% { transform: translate(10px, 6px) rotate(1deg); }
+      70% { transform: translate(-6px, 4px) rotate(-0.5deg); }
+      80% { transform: translate(6px, -4px) rotate(0.5deg); }
+    }
+    .bam-shake-screen {
+      animation: bam-shake 0.65s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    /* Pulsating Victory Glow */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 30px rgba(192, 132, 252, 0.6); }
+      50% { box-shadow: 0 0 70px rgba(192, 132, 252, 0.95); }
+    }
+    .victory-glow {
+      animation: pulse-glow 1.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body id="app-body" class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-between p-3 md:p-6 font-sans selection:bg-purple-500 selection:text-slate-900 custom-scrollbar transition-all duration-300">
+
+  <!-- Main Header -->
+  <header class="w-full max-w-6xl glass-card rounded-2xl p-4 mb-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-purple-500/30 shadow-2xl relative">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="bg-purple-500/20 text-purple-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-purple-500/40">SCFHS Saudi Board - Master Level 2</span>
+        <h1 class="text-xl md:text-2xl font-black bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
+          Nurse Technician Master Matrix (Level 2)
+        </h1>
+      </div>
+      <p class="text-xs text-slate-400 mt-0.5">50 Master-Level Prometric Clinical Vignettes & High-Complexity Decision Protocols</p>
+    </div>
+    
+    <!-- Mode Selectors -->
+    <div class="flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-semibold shadow-inner">
+      <button id="mode-matrix-btn" onclick="switchMode('matrix')" class="px-3 py-1.5 rounded-lg text-purple-400 bg-slate-800 transition">Master Matrix</button>
+      <button id="mode-speed-btn" onclick="switchMode('speed')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Rapid Match</button>
+      <button id="mode-flag-btn" onclick="switchMode('flag')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Safety Override</button>
+    </div>
+
+    <!-- Timer & Dominant Corner Score -->
+    <div class="flex items-center gap-4">
+      <div id="timer-display" class="bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-sm px-3 py-2 rounded-xl font-bold">
+        ⏱️ 60s
+      </div>
+
+      <!-- DOMINANT SCORE DISPLAY -->
+      <div class="bg-slate-900/95 border-2 border-purple-400 px-4 py-2 rounded-xl text-right shadow-2xl relative min-w-[150px]">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TOTAL SCORE</div>
+        <div id="score-display" class="text-3xl md:text-4xl font-black font-mono text-purple-300 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">0</div>
+        <div id="target-score-display" class="text-[9px] text-amber-400/90 font-mono font-bold">TARGET: 12,500 PTS</div>
+        <div id="score-float" class="absolute -bottom-6 right-2 text-xs font-bold font-mono opacity-0 transition-all duration-500"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Game Arena -->
+  <main class="w-full max-w-6xl flex-1 flex flex-col justify-center">
+
+    <!-- MODE 1: NURSE TECHNICIAN MASTER MATRIX -->
+    <section id="game-mode-matrix" class="glass-card rounded-2xl p-4 md:p-6 shadow-2xl relative overflow-hidden">
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+          Step 1: Select Slot → Step 2: Assign Matching Clinical Data
+        </span>
+        <span id="matrix-set-counter" class="text-xs text-slate-400 font-mono">Case 1 / 50</span>
+      </div>
+
+      <!-- Clinical Vignette -->
+      <div class="bg-slate-900/90 rounded-xl p-4 mb-4 border border-slate-800 shadow-inner">
+        <div class="flex justify-between items-start mb-1">
+          <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">Master-Level Prometric Vignette:</span>
+          <span id="matrix-category" class="text-[10px] uppercase font-bold bg-slate-800 text-purple-300 px-2 py-0.5 rounded border border-slate-700">Expert Level 2</span>
+        </div>
+        <h2 id="matrix-title" class="text-lg font-bold text-fuchsia-300 mb-1">Loading...</h2>
+        <p id="matrix-symptoms" class="text-xs md:text-sm text-slate-200 leading-relaxed font-mono bg-slate-950/80 p-3 rounded-lg border border-slate-800">Loading scenario...</p>
+      </div>
+
+      <!-- Target Matrix Slots -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <!-- Slot 1: Priority Technician Action -->
+        <div id="slot-container-tx" onclick="selectActiveSlot('tx')" class="cursor-pointer bg-slate-900/80 p-3 rounded-xl border border-slate-700 transition hover:border-purple-400">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-purple-400 uppercase">1. Priority Technical Action</span>
+            <span id="badge-tx" class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Empty</span>
+          </div>
+          <div id="slot-text-tx" class="min-h-[70px] bg-slate-950/80 rounded-lg p-2.5 border border-dashed border-slate-700 text-xs text-slate-400 flex items-center justify-center text-center italic">
+            Click here, then select matching Action below
+          </div>
+        </div>
+
+        <!-- Slot 2: Protocol / Standard Procedure -->
+        <div id="slot-container-drug" onclick="selectActiveSlot('drug')" class="cursor-pointer bg-slate-900/80 p-3 rounded-xl border border-slate-700 transition hover:border-fuchsia-400">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-fuchsia-400 uppercase">2. Master Protocol / Management</span>
+            <span id="badge-drug" class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Empty</span>
+          </div>
+          <div id="slot-text-drug" class="min-h-[70px] bg-slate-950/80 rounded-lg p-2.5 border border-dashed border-slate-700 text-xs text-slate-400 flex items-center justify-center text-center italic">
+            Click here, then select matching Protocol below
+          </div>
+        </div>
+
+        <!-- Slot 3: Safety Principle & Rationale -->
+        <div id="slot-container-rule" onclick="selectActiveSlot('rule')" class="cursor-pointer bg-slate-900/80 p-3 rounded-xl border border-slate-700 transition hover:border-amber-400">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-amber-400 uppercase">3. Critical Safety Principle</span>
+            <span id="badge-rule" class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Empty</span>
+          </div>
+          <div id="slot-text-rule" class="min-h-[70px] bg-slate-950/80 rounded-lg p-2.5 border border-dashed border-slate-700 text-xs text-slate-400 flex items-center justify-center text-center italic">
+            Click here, then select matching Safety Rule below
+          </div>
+        </div>
+      </div>
+
+      <!-- Shuffled Options Pool -->
+      <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-slate-300 uppercase">Clinical Options Pool (Includes Board Exam Distractors):</span>
+          <span id="active-slot-indicator" class="text-xs font-bold text-purple-400 animate-pulse">Target Slot: Technician Action</span>
+        </div>
+        <div id="matrix-options-pool" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="flex gap-3 mt-4">
+        <button onclick="resetCurrentMatrixSlots()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition">
+          Reset Slots
+        </button>
+        <button id="submit-matrix-btn" onclick="submitMatrixSet()" class="flex-1 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 font-black text-white rounded-xl shadow-lg transition active:scale-98 text-sm uppercase tracking-wider">
+          Validate & Submit Clinical Decision (+250 / -100 Pts)
+        </button>
+      </div>
+    </section>
+
+    <!-- MODE 2: RAPID MATCH -->
+    <section id="game-mode-speed" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+          Mode 2: Rapid Dual Match (+100 / -50 Pts)
+        </span>
+        <span id="speed-case-counter" class="text-xs text-slate-400 font-mono">Case 1 / 50</span>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-xl p-4 mb-4 border border-slate-800">
+        <h2 id="speed-condition-title" class="text-lg font-bold text-fuchsia-300 mb-1">Loading...</h2>
+        <div class="text-xs text-purple-300 font-semibold mb-1 uppercase tracking-wider">Clinical Scenario / Presentation:</div>
+        <p id="speed-symptoms" class="text-xs md:text-sm text-slate-200 leading-relaxed bg-slate-950/70 p-3 rounded-lg border border-slate-800 font-mono">Loading clinical presentation...</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-purple-400 mb-2 uppercase">1. Priority Technical Action</label>
+          <div id="speed-tx-options" class="space-y-2"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-fuchsia-400 mb-2 uppercase">2. Master Protocol</label>
+          <div id="speed-drug-options" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODE 3: SAFETY OVERRIDE -->
+    <section id="game-mode-flag" class="hidden glass-card rounded-2xl p-5 md:p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-xs font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
+          Mode 3: Critical Contraindication Override (+150 / -75 Pts)
+        </span>
+        <span id="flag-case-counter" class="text-xs text-slate-400 font-mono">Case 1 / 50</span>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-xl p-4 mb-6 border border-slate-800">
+        <div class="flex items-center gap-2 text-rose-400 font-bold text-sm mb-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          High-Risk Master Practice Scenario
+        </div>
+        <p id="flag-scenario" class="text-xs md:text-sm text-slate-200 leading-relaxed font-mono bg-slate-950/70 p-3 rounded-lg border border-slate-800"></p>
+      </div>
+
+      <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-6 text-center">
+        <p class="text-xs text-slate-300 uppercase font-semibold">Proposed Clinical Action / Intervention:</p>
+        <p id="flag-proposed-action" class="text-base font-bold text-amber-300 mt-0.5 underline">Loading...</p>
+      </div>
+
+      <div id="flag-button-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- FULL-SCREEN "HEBOH" VICTORY CELEBRATION OVERLAY -->
+  <div id="victory-overlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl hidden flex flex-col items-center justify-center p-6 z-50 transition-all duration-300">
+    <div class="victory-glow bg-slate-900 border-2 border-purple-400 rounded-3xl max-w-xl w-full p-8 text-center shadow-2xl relative overflow-hidden">
+      <div class="text-6xl mb-3 animate-bounce">🏆</div>
+      <span class="bg-purple-500/20 text-purple-300 text-xs font-black px-4 py-1.5 rounded-full border border-purple-400/50 uppercase tracking-widest">MASTER CLINICAL DECISION</span>
+      <h2 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-200 to-amber-300 my-3">
+        EXCELLENT MASTER!
+      </h2>
+      <div class="text-6xl md:text-7xl font-black font-mono text-purple-300 my-2 drop-shadow-[0_0_20px_rgba(192,132,252,0.8)]" id="victory-added-score">
+        +250
+      </div>
+      <p class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">TOTAL SCORE NOW: <span id="victory-total-score" class="text-amber-300 text-lg">0</span> PTS</p>
+      
+      <div id="victory-eval-box" class="bg-slate-950/90 text-left p-4 rounded-2xl border border-slate-800 text-xs space-y-2 mb-6"></div>
+
+      <button onclick="closeVictoryOverlay()" class="w-full py-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-400 hover:to-fuchsia-400 font-black text-slate-950 rounded-2xl shadow-xl transition transform active:scale-95 text-base uppercase tracking-wider">
+        CONTINUE TO NEXT MASTER CASE &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- FULL-SCREEN DRAMATIC "BAM" FAILURE OVERLAY -->
+  <div id="failure-overlay" class="fixed inset-0 bg-rose-950/95 backdrop-blur-xl hidden flex flex-col items-center justify-center p-6 z-50 transition-all duration-300">
+    <div class="bg-slate-900 border-2 border-rose-600 rounded-3xl max-w-xl w-full p-8 text-center shadow-2xl relative overflow-hidden">
+      <div class="text-6xl mb-2 animate-ping">💥</div>
+      <span class="bg-rose-500/20 text-rose-400 text-xs font-black px-4 py-1.5 rounded-full border border-rose-500/50 uppercase tracking-widest">CRITICAL CLINICAL ERROR</span>
+      <h2 class="text-4xl md:text-6xl font-black text-rose-500 my-2 tracking-tight drop-shadow-[0_0_15px_rgba(244,63,94,0.8)]">
+        BAM! INCORRECT!
+      </h2>
+      <div class="text-5xl md:text-6xl font-black font-mono text-rose-400 my-2" id="failure-deducted-score">
+        -100
+      </div>
+      <p class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">TOTAL SCORE NOW: <span id="failure-total-score" class="text-rose-300 text-lg">0</span> PTS</p>
+
+      <div id="failure-eval-box" class="bg-slate-950/90 text-left p-4 rounded-2xl border border-rose-900/50 text-xs space-y-2 mb-6"></div>
+
+      <button onclick="closeFailureOverlay()" class="w-full py-4 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 font-black text-white rounded-2xl shadow-xl transition transform active:scale-95 text-base uppercase tracking-wider">
+        REVIEW RATIONALE & RETRY &rarr;
+      </button>
+    </div>
+  </div>
+
+  <script>
+    class SoundEngine {
+      constructor() { this.ctx = null; }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playVictory() {
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(f, now + idx * 0.07);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.25);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.07); osc.stop(now + idx * 0.07 + 0.25);
+        });
+      }
+      playFailure() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.5);
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // 50 MASTER & EXPERT-LEVEL (LEVEL 2) PROMETRIC SCFHS NURSE TECHNICIAN CASES
+    const cases = [
+      { id: 1, cond: "Massive Transfusion Protocol & Hyperkalemic Cardiac Arrest", symp: "Trauma patient receiving rapid un-warmed banked PRBCs develops sudden wide-complex bradycardia (K+ 7.8 mEq/L) and loss of pulse", tx: "Initiate CPR, stop transfusion, give Calcium Chloride 10% 1g IV push + Insulin/D5W rapidly", drug: "Massive Blood Transfusion Hyperkalemia Protocol", rule: "Stored banked PRBCs release potassium during storage; rapid un-warmed infusion induces fatal hyperkalemic arrest", safeAction: "CPR + Stop Blood + IV Calcium Chloride Push", unsafeAction: "Accelerate Transfusion Rate and Give IV Furosemide Only", isUnsafe: true },
+      { id: 2, cond: "Subclavian CVC Insertion Air Embolism & Lock Management", symp: "During subclavian CVC insertion while patient inhales deeply, un-capped lumen draws air; patient develops sudden gasping cyanosis", tx: "Clamp lumen immediately, place patient in Left Lateral Trendelenburg, give 100% O2 via NRB", drug: "Air Embolism Rescue Standard", rule: "Left lateral Trendelenburg traps air bubble in RV apex preventing obstruction of pulmonary trunk", safeAction: "Clamp Line + Left Lateral Trendelenburg + 100% O2", unsafeAction: "Place Patient in High Fowler's and Flush Line", isUnsafe: true },
+      { id: 3, cond: "Severe Heparin-Induced Thrombocytopenia (HIT Type II)", symp: "ICU patient on continuous IV Heparin for 6 days shows 60% drop in platelets (from 250k to 80k) with new right leg arterial clot", tx: "Discontinue ALL Heparin (including flushes) stat; initiate Direct Thrombin Inhibitor (Argatroban)", drug: "HIT Type II Protocol", rule: "Administering platelet transfusion in HIT II is contraindicated—it fuels prothrombotic immune complex thrombosis", safeAction: "Stop Heparin + Start Argatroban IV Drip", unsafeAction: "Administer Platelet Concentrate Transfusion", isUnsafe: true },
+      { id: 4, cond: "Invasive Radial Arterial Line Ischemia & Allen's Test Failure", symp: "Arterial line site in right radial artery shows pale, cold fingers with capillary refill >5s and loss of thumb pulse", tx: "Notify vascular surgeon stat; prepare for immediate arterial line removal and collateral perfusion check", drug: "Arterial Occlusion Protocol", rule: "Do not apply cold compresses or tight occlusive wraps over ischemic extremities", safeAction: "Notify Surgeon + Remove Arterial Line Stat", unsafeAction: "Apply Ice Pack and Wrap Wrist Tightly with Pressure Bandage", isUnsafe: true },
+      { id: 5, cond: "Refeeding Syndrome in Severe Malnutrition", symp: "Anorexic patient started on high-calorie enteral nutrition develops severe muscle weakness, delirium, and Serum Phosphate 1.1 mg/dL", tx: "Pause/reduce enteral feed rate, notify physician stat, replate Electrolytes (Phosphate, Potassium, Magnesium)", drug: "Refeeding Syndrome Management Protocol", rule: "Carbohydrate loading triggers insulin release driving phosphate into cells, causing lethal hypophosphatemic arrest", safeAction: "Reduce Feed Rate + Replace IV Phosphate", unsafeAction: "Double Enteral Feed Rate to Restore Energy", isUnsafe: true },
+      { id: 6, cond: "Cerebral Salt Wasting vs SIADH Post-Neurosurgery", symp: "Post-craniotomy patient develops hyponatremia (Na+ 118 mEq/L), severe hypovolemia, high urine output (>4 L/day), and weight loss", tx: "Administer 0.9% Normal Saline and 3% Hypertonic Saline as ordered; maintain positive fluid balance", drug: "Cerebral Salt Wasting (CSW) Protocol", rule: "Fluid restriction is fatal in CSW (unlike SIADH) because CSW involves true volume depletion", safeAction: "Isotonic & Hypertonic Saline Hydration", unsafeAction: "Enforce Strict Fluid Restriction <800 mL/day", isUnsafe: true },
+      { id: 7, cond: "Post-Thyroidectomy Hematoma & Bedside Airway Decompression", symp: "2 hours post-total thyroidectomy, patient develops rapidly expanding neck swelling, inspiratory stridor, and severe agitation", tx: "Call emergency airway team stat; open surgical skin clips/sutures at bedside immediately to evacuate clot", drug: "Post-Thyroidectomy Airway Emergency Protocol", rule: "Opening neck clips at bedside relieves direct tracheal compression before hypoxia causes brain death", safeAction: "Open Neck Skin Clips at Bedside Stat", unsafeAction: "Delay Action for Transport to OR or X-Ray", isUnsafe: true },
+      { id: 8, cond: "Transfusion-Related Acute Lung Injury (TRALI) Emergency", symp: "1 hour into FFP infusion, patient develops severe non-cardiogenic pulmonary edema, fever (+1.8C), bilateral infiltrates, BP 78/42", tx: "Stop infusion stat, support airway with 100% O2, notify blood bank; avoid loop diuretics (Furosemide)", drug: "TRALI Resuscitation Standard", rule: "TRALI is immune-mediated non-cardiogenic leakage; aggressive loop diuretics cause hypovolemic shock", safeAction: "Stop FFP + 100% O2 + Avoid Diuretics", unsafeAction: "Administer Rapid 80 mg IV Furosemide Push", isUnsafe: true },
+      { id: 9, cond: "Intraventricular Hemorrhage & EVD Occlusion", symp: "Neurosurgical patient with EVD monitoring ICP shows sudden cessation of CSF drainage and ICP spike from 14 to 32 mmHg", tx: "Inspect system for kinks, verify stopcock orientation; if occluded by clot, notify surgeon (DO NOT flush towards brain)", drug: "EVD Occlusion Safety Protocol", rule: "Flushing an EVD catheter towards the cerebral ventricles can cause fatal intraventricular pressure surge", safeAction: "Check Line Kinks + Notify Surgeon Stat", unsafeAction: "Forcibly Flush 10 mL Saline Into Brain Catheter", isUnsafe: true },
+      { id: 10, cond: "Accidental Intra-Arterial Injection of Phenytoin", symp: "During IV push of Phenytoin into hand vein, line is accidentally in radial artery; patient screams with pale purple fingers", tx: "Stop injection immediately, keep catheter in place, notify surgeon, prepare Phentolamine/Heparin instillation", drug: "Intra-Arterial Drug Emergency Standard", rule: "Leaving arterial line in place allows direct vasodilator/anticoagulant instillation to prevent gangrene", safeAction: "Keep Line in Place + Prepare Intra-Arterial Vasodilator", unsafeAction: "Pull Out Line Instantly and Compress Firmly", isUnsafe: true },
+      { id: 11, cond: "Malignant Hyperthermia (MH) Crisis in PACU", symp: "Post-op patient exhibits masseter muscle rigidity (trismus), sudden ETCO2 surge to 88 mmHg, HR 158, core temp 41.1C", tx: "Stop volatile anesthetics, hyperventilate with 100% O2, push Dantrolene Sodium 2.5 mg/kg IV rapidly", drug: "Malignant Hyperthermia Emergency Protocol", rule: "Calcium channel blockers (e.g., Diltiazem) combined with Dantrolene cause severe hyperkalemia and cardiovascular collapse", safeAction: "IV Dantrolene Sodium + 100% O2 Hyperventilation", unsafeAction: "Administer Diltiazem IV Bolus for Tachycardia", isUnsafe: true },
+      { id: 12, cond: "High Epidural Block & Respiratory Arrest", symp: "Patient on continuous Epidural Morphine/Bupivacaine infusion develops numbness up to nipple line (T4), BP 72/40, RR 6/min", tx: "Stop epidural infusion, apply BVM 100% O2, notify anesthesia, give IV Ephedrine/Atropine and Naloxone", drug: "High Epidural Block Rescue Protocol", rule: "High motor block paralyses intercostal muscles and sympathetic chain, requiring immediate resuscitation", safeAction: "Stop Epidural + BVM 100% O2 + Vasopressors", unsafeAction: "Increase Epidural Rate to Treat Breakthrough Pain", isUnsafe: true },
+      { id: 13, cond: "Severe Phenytoin Extravasation (Purple Glove Syndrome)", symp: "Peripheral IV infusion of Phenytoin extravasates into dorsal hand; hand becomes purple, edematous, blanched with loss of pulse", tx: "Stop infusion immediately, aspirate residual drug, elevate hand, notify vascular surgeon for compartment check", drug: "Purple Glove Syndrome Standard", rule: "Alkaline Phenytoin causes microvascular thrombosis; avoid tight compressive wraps", safeAction: "Stop Infusion + Aspirate + Elevate + Surgery Consult", unsafeAction: "Apply Tight Elastic Compression Wrap to Hand", isUnsafe: true },
+      { id: 14, cond: "Post-Carotid Endarterectomy Hyperperfusion Syndrome", symp: "Patient post-carotid endarterectomy develops severe ipsilateral pounding headache, BP 210/110, and focal seizures", tx: "Notify surgeon stat, initiate IV antihypertensives (Nicardipine) to keep SBP strictly <140 mmHg", drug: "Cerebral Hyperperfusion Management Standard", rule: "Uncontrolled hypertension post-carotid surgery causes fatal intracerebral hemorrhage", safeAction: "Maintain SBP <140 via IV Antihypertensive Drip", unsafeAction: "Allow SBP to Remain >180 mmHg to Preserve Flow", isUnsafe: true },
+      { id: 15, cond: "Continuous Renal Replacement Therapy (CRRT) Air Embolism", symp: "CRRT machine air detector alarms, showing visible air bubbles in return line; patient develops sudden dyspnea", tx: "Clamp venous blood return line immediately, turn off blood pump, place patient in Left Lateral Trendelenburg", drug: "CRRT Air Leak Emergency Protocol", rule: "Clamping venous line prevents air bubbles from entering patient systemic circulation", safeAction: "Clamp Venous Line + Stop Pump + Left Lateral Position", unsafeAction: "Override Machine Air Alarm and Continue Pump", isUnsafe: true },
+      { id:
